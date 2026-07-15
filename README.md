@@ -48,6 +48,15 @@ Bias is deliberately toward signal: better to miss a borderline role than to
 spam. If Glean-style product-SWE roles feel noisy, raise `min_desc_matches`
 to 3; if it's missing too much, add terms to `include_title`.
 
+## Application tracker (Google Sheet)
+
+Every alerted job is appended as a row to a user-owned Google Sheet
+("FreshHire Tracker"); the **Status** and **Notes** columns are yours to
+edit and are never touched by the sync. Requires two Actions secrets:
+`GOOGLE_SHEET_ID` and `GOOGLE_SERVICE_ACCOUNT_JSON` (a service account
+the sheet is shared with as Editor). Local sync: `python cli.py sheet`
+with the same env vars.
+
 ## Deploying the cron (GitHub Actions)
 
 [.github/workflows/poll.yml](.github/workflows/poll.yml) runs every 3 hours
