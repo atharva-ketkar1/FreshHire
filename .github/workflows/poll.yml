@@ -2,7 +2,10 @@ name: FreshHire poll
 
 on:
   schedule:
-    - cron: "17 */3 * * *" # every 3 hours, off the hour to dodge cron congestion
+    # Every 3 hours, off the hour to dodge cron congestion. GitHub fires
+    # these best-effort and may skip the first ticks after a workflow is
+    # created; pushing any change to this file re-registers the schedule.
+    - cron: "23 */3 * * *"
   workflow_dispatch:
 
 permissions:
