@@ -27,16 +27,24 @@ jobs:
 
       - run: pip install -r requirements.txt
 
-      - name: Poll boards and send digest
+      - name: Poll boards
+        run: python cli.py poll
+
+      # May fail (e.g. missing SLACK_WEBHOOK_URL secret) — that should show
+      # as a red run, but must not prevent the poll data from persisting,
+      # so the persist step below runs even if this one fails. Unalerted
+      # jobs stay queued and go out on the next successful digest.
+      - name: Send digest
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-        run: python cli.py run
+        run: python cli.py digest
 
       # The DB changes on every poll (last_seen_at), so normal commits would
       # bloat the repo by hundreds of MB/month. Instead, keep the DB in one
       # rolling commit: amend it if the tip is already a poll commit,
       # otherwise create it. History for code commits is untouched.
       - name: Persist database (single rolling commit)
+        if: ${{ !cancelled() }}
         run: |
           git config user.name "freshhire-bot"
           git config user.email "freshhire-bot@users.noreply.github.com"
