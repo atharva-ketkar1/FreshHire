@@ -12,7 +12,8 @@ import requests
 from freshhire.models import RawJob
 
 API = "https://api.lever.co/v0/postings/{slug}?mode=json"
-DESCRIPTION_LIMIT = 5000
+# generous: experience requirements often sit deep in long postings
+DESCRIPTION_LIMIT = 20000
 
 _WS_RE = re.compile(r"\s+")
 

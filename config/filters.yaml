@@ -4,6 +4,14 @@
 # Alert on jobs first seen within this many hours.
 recency_hours: 24
 
+# Only US-based (or US-inclusive multi-location) roles. Blank locations pass.
+us_only: true
+
+# Reject postings whose stated minimum experience requirement exceeds this
+# many years (the smallest "N+ years ... experience" figure found in the
+# description). Postings that state no requirement pass.
+max_years_experience: 2
+
 # Stage 1: if the TITLE matches any of these, the job is out. Full stop.
 # Entries starting with "re:" are raw regexes; everything else matches on
 # word boundaries.

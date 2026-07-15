@@ -100,9 +100,11 @@ def record_sighting(
         return "new"
     reopened = row["closed_at"] is not None
     # A repost keeps its original first_seen_at — that's the whole point.
+    # relevant is refreshed with the full live description so filter changes
+    # propagate to open jobs on the next poll (rescore only sees snippets).
     conn.execute(
-        "UPDATE jobs SET last_seen_at=?, closed_at=NULL, ats_job_id=?, url=? WHERE id=?",
-        (now, job.ats_job_id, job.url, row["id"]),
+        "UPDATE jobs SET last_seen_at=?, closed_at=NULL, ats_job_id=?, url=?, relevant=? WHERE id=?",
+        (now, job.ats_job_id, job.url, int(relevant), row["id"]),
     )
     return "reopened" if reopened else "seen"
 

@@ -13,7 +13,8 @@ import requests
 from freshhire.models import RawJob
 
 API = "https://boards-api.greenhouse.io/v1/boards/{slug}/jobs?content=true"
-DESCRIPTION_LIMIT = 5000
+# generous: experience requirements often sit deep in long postings
+DESCRIPTION_LIMIT = 20000
 
 _TAG_RE = re.compile(r"<[^>]+>")
 _WS_RE = re.compile(r"\s+")

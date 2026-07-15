@@ -19,6 +19,60 @@ from pathlib import Path
 
 import yaml
 
+# --- US location detection (positive-match: no US signal => not US) ---
+_US_STATES = (
+    "alabama alaska arizona arkansas california colorado connecticut delaware florida georgia "
+    "hawaii idaho illinois indiana iowa kansas kentucky louisiana maine maryland massachusetts "
+    "michigan minnesota mississippi missouri montana nebraska nevada ohio oklahoma oregon "
+    "pennsylvania tennessee texas utah vermont virginia washington wisconsin wyoming"
+).split() + ["new hampshire", "new jersey", "new mexico", "new york", "north carolina",
+             "north dakota", "rhode island", "south carolina", "south dakota", "west virginia"]
+_US_CITIES = [
+    "san francisco", "sf bay", "nyc", "brooklyn", "seattle", "mountain view", "palo alto",
+    "sunnyvale", "san jose", "santa clara", "cupertino", "menlo park", "redwood city",
+    "san mateo", "south san francisco", "foster city", "oakland", "berkeley", "emeryville",
+    "los angeles", "santa monica", "san diego", "irvine", "austin", "dallas", "houston",
+    "boston", "chicago", "denver", "boulder", "atlanta", "miami", "bellevue", "redmond",
+    "kirkland", "phoenix", "salt lake city", "pittsburgh", "philadelphia", "minneapolis",
+    "ann arbor", "raleigh", "durham", "nashville", "columbus", "st. louis", "washington dc",
+]
+_US_PATTERNS = [
+    re.compile(r"(?<![a-z0-9])" + re.escape(t) + r"(?![a-z0-9])")
+    for t in ["united states", "usa", "u.s.", "us"] + _US_STATES + _US_CITIES
+]
+# "City, ST" state abbreviations (comma-anchored so "Remote or Hybrid" can't match OR)
+_US_STATE_ABBREV_RE = re.compile(
+    r",\s*(al|ak|az|ar|ca|co|ct|de|fl|ga|hi|id|il|in|ia|ks|ky|la|me|md|ma|mi|mn|ms|mo|mt|ne|"
+    r"nv|nh|nj|nm|ny|nc|nd|oh|ok|or|pa|ri|sc|sd|tn|tx|ut|vt|va|wa|wv|wi|wy|dc)(?![a-z0-9])"
+)
+
+# --- minimum years-of-experience requirements in descriptions ---
+_YEARS_BEFORE_RE = re.compile(r"(\d{1,2})\s*\+?\s*(?:-\s*\d{1,2}\s*)?years?[^.\n]{0,50}?experience")
+_YEARS_AFTER_RE = re.compile(r"experience[^.\n]{0,50}?(\d{1,2})\s*\+?\s*years?")
+
+
+def is_us_location(location: str) -> bool:
+    """True if the location names anywhere in the US (multi-location strings
+    pass if any listed location is in the US). Empty locations pass — most
+    watched companies are US-based and blank usually means HQ/remote-US."""
+    loc = (location or "").lower()
+    if not loc.strip():
+        return True
+    return bool(_US_STATE_ABBREV_RE.search(loc)) or any(p.search(loc) for p in _US_PATTERNS)
+
+
+def min_years_required(description: str) -> int | None:
+    """Smallest years-of-experience figure stated near 'experience', or None.
+    Using the minimum keeps '2+ years (5+ for senior)' postings alive."""
+    desc = (description or "").lower()
+    years = [
+        int(m.group(1))
+        for pattern in (_YEARS_BEFORE_RE, _YEARS_AFTER_RE)
+        for m in pattern.finditer(desc)
+        if int(m.group(1)) <= 20  # ignore "founded 25 years ago" noise
+    ]
+    return min(years) if years else None
+
 
 def _term_re(term: str) -> re.Pattern:
     # "re:" prefix = raw regex (for terms needing exceptions, e.g. excluding
@@ -32,6 +86,8 @@ def _term_re(term: str) -> re.Pattern:
 class RoleFilter:
     def __init__(self, cfg: dict):
         self.recency_hours = int(cfg.get("recency_hours", 24))
+        self.us_only = bool(cfg.get("us_only", False))
+        self.max_years = cfg.get("max_years_experience")
         self.exclude = [_term_re(t) for t in cfg.get("exclude_title", [])]
         self.include = [_term_re(t) for t in cfg.get("include_title", [])]
         self.conditional = [
@@ -44,10 +100,21 @@ class RoleFilter:
             for rule in cfg.get("conditional_title", [])
         ]
 
-    def is_relevant(self, title: str, description: str) -> bool:
+    def is_relevant(self, title: str, description: str, location: str = "") -> bool:
         title_l = (title or "").lower()
         if any(p.search(title_l) for p in self.exclude):
             return False
+        if self.us_only and not is_us_location(location):
+            return False
+        if not self._title_match(title_l, description):
+            return False
+        if self.max_years is not None:
+            required = min_years_required(description)
+            if required is not None and required > int(self.max_years):
+                return False
+        return True
+
+    def _title_match(self, title_l: str, description: str) -> bool:
         if any(p.search(title_l) for p in self.include):
             return True
         desc_l = (description or "").lower()

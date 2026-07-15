@@ -126,10 +126,10 @@ def cmd_rescore(conn, args) -> int:
     differ slightly until the next poll refreshes them.
     """
     role_filter = load_filter(FILTERS_PATH)
-    rows = conn.execute("SELECT id, title, description_snippet, relevant FROM jobs").fetchall()
+    rows = conn.execute("SELECT id, title, location, description_snippet, relevant FROM jobs").fetchall()
     flipped = 0
     for r in rows:
-        relevant = role_filter.is_relevant(r["title"], r["description_snippet"] or "")
+        relevant = role_filter.is_relevant(r["title"], r["description_snippet"] or "", r["location"] or "")
         if int(relevant) != r["relevant"]:
             conn.execute("UPDATE jobs SET relevant=? WHERE id=?", (int(relevant), r["id"]))
             flipped += 1
