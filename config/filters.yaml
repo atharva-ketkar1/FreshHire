@@ -5,7 +5,24 @@
 recency_hours: 24
 
 # Stage 1: if the TITLE matches any of these, the job is out. Full stop.
+# Entries starting with "re:" are raw regexes; everything else matches on
+# word boundaries.
 exclude_title:
+  # --- seniority: early-career search, senior+ roles are out ---
+  - senior
+  - sr
+  - "re:(?<!technical )staff"   # kills "Staff Engineer", keeps "Member of Technical Staff"
+  - principal
+  - lead
+  - distinguished
+  - director
+  - manager
+  - head
+  - vp
+  - vice president
+  - chief
+  - fellow
+  - architect
   - recruiter
   - recruiting
   - sourcer
@@ -52,6 +69,13 @@ exclude_title:
 
 # Stage 2: if the TITLE matches any of these, the job is in.
 include_title:
+  # early-career signals (every seeded company is an AI company, so these
+  # are safe to accept on title alone)
+  - new grad
+  - new graduate
+  - university grad
+  - early career
+  - entry level
   - ai engineer
   - applied ai
   - machine learning
@@ -101,9 +125,6 @@ conditional_title:
       - llm
       - genai
       - agentic
-  - title: solutions architect
-    title_context: *title_ctx
-    desc_context: *desc_ctx
   - title: software engineer
     title_context: *title_ctx
     desc_context: *desc_ctx

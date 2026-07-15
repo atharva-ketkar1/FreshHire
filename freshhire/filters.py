@@ -21,6 +21,11 @@ import yaml
 
 
 def _term_re(term: str) -> re.Pattern:
+    # "re:" prefix = raw regex (for terms needing exceptions, e.g. excluding
+    # "staff" but not "member of technical staff"); anything else is a plain
+    # word-boundary term.
+    if term.startswith("re:"):
+        return re.compile(term[3:].lower())
     return re.compile(r"(?<![a-z0-9])" + re.escape(term.lower()) + r"(?![a-z0-9])")
 
 

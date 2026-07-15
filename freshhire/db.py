@@ -34,7 +34,8 @@ CREATE TABLE IF NOT EXISTS jobs (
     first_seen_at       TEXT NOT NULL,
     last_seen_at        TEXT NOT NULL,
     closed_at           TEXT,
-    alerted_at          TEXT
+    alerted_at          TEXT,
+    sheeted_at          TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_jobs_company ON jobs(company_id);
@@ -51,6 +52,11 @@ def connect(path: str | Path) -> sqlite3.Connection:
     conn = sqlite3.connect(path)
     conn.row_factory = sqlite3.Row
     conn.executescript(SCHEMA)
+    # migrations for DBs created before a column existed
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(jobs)")}
+    if "sheeted_at" not in cols:
+        conn.execute("ALTER TABLE jobs ADD COLUMN sheeted_at TEXT")
+        conn.commit()
     return conn
 
 
@@ -132,4 +138,20 @@ def fresh_unalerted(conn: sqlite3.Connection, hours: int) -> list[sqlite3.Row]:
 
 def mark_alerted(conn: sqlite3.Connection, job_ids: list[int], now: str) -> None:
     conn.executemany("UPDATE jobs SET alerted_at=? WHERE id=?", [(now, i) for i in job_ids])
+    conn.commit()
+
+
+def alerted_unsheeted(conn: sqlite3.Connection) -> list[sqlite3.Row]:
+    """Alerted jobs not yet appended to the tracker sheet (still relevant only,
+    so jobs re-scored out by a filter change don't get backfilled)."""
+    return conn.execute(
+        """SELECT jobs.*, companies.name AS company_name
+           FROM jobs JOIN companies ON companies.id = jobs.company_id
+           WHERE jobs.relevant=1 AND jobs.alerted_at IS NOT NULL AND jobs.sheeted_at IS NULL
+           ORDER BY jobs.first_seen_at""",
+    ).fetchall()
+
+
+def mark_sheeted(conn: sqlite3.Connection, job_ids: list[int], now: str) -> None:
+    conn.executemany("UPDATE jobs SET sheeted_at=? WHERE id=?", [(now, i) for i in job_ids])
     conn.commit()

@@ -37,7 +37,15 @@ jobs:
       - name: Send digest
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
         run: python cli.py digest
+
+      - name: Sync tracker sheet
+        if: ${{ !cancelled() }}
+        env:
+          GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+        run: python cli.py sheet
 
       # The DB changes on every poll (last_seen_at), so normal commits would
       # bloat the repo by hundreds of MB/month. Instead, keep the DB in one

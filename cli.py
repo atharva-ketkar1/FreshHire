@@ -8,6 +8,7 @@
 """
 
 import argparse
+import json
 import os
 import sys
 from pathlib import Path
@@ -16,7 +17,7 @@ import yaml
 
 from freshhire import db
 from freshhire.alerts import digest as digest_fmt
-from freshhire.alerts import slack
+from freshhire.alerts import sheets, slack
 from freshhire.filters import load_filter
 from freshhire.poll import poll_all
 
@@ -59,7 +60,11 @@ def cmd_digest(conn, args) -> int:
 
     webhook = os.environ.get("SLACK_WEBHOOK_URL")
     if webhook:
-        slack.send(webhook, digest_fmt.format_slack(rows))
+        text = digest_fmt.format_slack(rows)
+        sheet_id = os.environ.get("GOOGLE_SHEET_ID")
+        if sheet_id:
+            text += f"\n<{sheets.sheet_url(sheet_id)}|Open tracker sheet>"
+        slack.send(webhook, text)
         print(f"[digest] sent {len(rows)} job(s) to Slack")
     elif args.stdout:
         print(digest_fmt.format_text(rows))
@@ -74,9 +79,37 @@ def cmd_digest(conn, args) -> int:
     return 0
 
 
+def cmd_sheet(conn, args) -> int:
+    """Append alerted-but-unsheeted jobs to the Google Sheet tracker."""
+    sheet_id = os.environ.get("GOOGLE_SHEET_ID")
+    sa_json = os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON")
+    if not sheet_id or not sa_json:
+        print("[sheet] GOOGLE_SHEET_ID / GOOGLE_SERVICE_ACCOUNT_JSON not set — skipping tracker sync")
+        return 0
+    rows_db = db.alerted_unsheeted(conn)
+    if not rows_db:
+        print("[sheet] tracker already up to date")
+        return 0
+    rows = [
+        [r["first_seen_at"][:10], r["company_name"], r["title"],
+         r["location"] or "", r["url"], "", ""]
+        for r in rows_db
+    ]
+    sheets.append_jobs(json.loads(sa_json), sheet_id, rows)
+    db.mark_sheeted(conn, [r["id"] for r in rows_db], db.utcnow())
+    print(f"[sheet] appended {len(rows)} job(s) to the tracker")
+    return 0
+
+
 def cmd_run(conn, args) -> int:
     rc = cmd_poll(conn, args)
-    return rc or cmd_digest(conn, args)
+    if rc:
+        return rc
+    rc_digest = cmd_digest(conn, args)
+    # sheet sync runs even if digest failed — it backfills previously
+    # alerted jobs and loses nothing by trying
+    rc_sheet = cmd_sheet(conn, args)
+    return rc_digest or rc_sheet
 
 
 def cmd_list_new(conn, args) -> int:
@@ -123,6 +156,7 @@ def main() -> int:
     p_list.add_argument("--hours", type=int, default=24)
 
     sub.add_parser("rescore", help="re-apply filters.yaml to all stored jobs")
+    sub.add_parser("sheet", help="sync alerted jobs to the Google Sheet tracker")
 
     args = parser.parse_args()
     if not hasattr(args, "hours"):
@@ -136,6 +170,7 @@ def main() -> int:
             "run": cmd_run,
             "list-new": cmd_list_new,
             "rescore": cmd_rescore,
+            "sheet": cmd_sheet,
         }[args.command]
         return handler(conn, args)
     finally:
