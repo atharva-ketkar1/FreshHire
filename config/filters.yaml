@@ -1,0 +1,124 @@
+# Role relevance rules. All matching is case-insensitive and word-boundary
+# based ("ai" will not match "email"). Tune freely — no code changes needed.
+
+# Alert on jobs first seen within this many hours.
+recency_hours: 24
+
+# Stage 1: if the TITLE matches any of these, the job is out. Full stop.
+exclude_title:
+  - recruiter
+  - recruiting
+  - sourcer
+  - talent
+  - account executive
+  - account manager
+  - sales development
+  - business development
+  - customer success
+  - marketing
+  - growth
+  - copywriter
+  - attorney
+  - counsel
+  - paralegal
+  - legal
+  - accountant
+  - accounting
+  - payroll
+  - finance
+  - people operations
+  - people ops
+  - hr
+  - executive assistant
+  - administrative
+  - office manager
+  - workplace
+  - intern
+  - internship
+  - data analyst
+  - business analyst
+  - product manager
+  - program manager
+  - project manager
+  - product designer
+  - brand designer
+  - technical writer
+  - it support
+  - it engineer
+  - help desk
+  - staffing
+  - contract
+  - contractor
+
+# Stage 2: if the TITLE matches any of these, the job is in.
+include_title:
+  - ai engineer
+  - applied ai
+  - machine learning
+  - ml engineer
+  - mle
+  - forward deployed
+  - forward-deployed
+  - fde
+  - research engineer
+  - applied scientist
+  - research scientist
+  - llm
+  - genai
+  - generative ai
+  - deep learning
+  - nlp
+  - computer vision
+  - mlops
+  - ml platform
+  - ml infrastructure
+  - ml ops
+  - agent engineer
+  - agents
+  - ai platform
+  - inference
+  - model serving
+  - prompt engineer
+
+# Stage 3: title term must match, AND either a title_context term appears in
+# the title, or at least min_desc_matches DISTINCT desc_context phrases appear
+# in the description. Bare "ai" is only trusted in titles, and a single
+# boilerplate "LLM" mention is not enough — every AI company's job
+# descriptions have one.
+min_desc_matches: 2
+
+conditional_title:
+  - title: solutions engineer
+    title_context: &title_ctx [ai, ml, llm, machine learning, genai, intelligence]
+    desc_context: &desc_ctx
+      - large language model
+      - foundation model
+      - model training
+      - model inference
+      - fine-tuning
+      - rag
+      - retrieval-augmented
+      - llm
+      - genai
+      - agentic
+  - title: solutions architect
+    title_context: *title_ctx
+    desc_context: *desc_ctx
+  - title: software engineer
+    title_context: *title_ctx
+    desc_context: *desc_ctx
+  - title: infrastructure engineer
+    title_context: *title_ctx
+    desc_context: *desc_ctx
+  - title: platform engineer
+    title_context: *title_ctx
+    desc_context: *desc_ctx
+  - title: member of technical staff
+    title_context: *title_ctx
+    desc_context: *desc_ctx
+  - title: full stack engineer
+    title_context: *title_ctx
+    desc_context: *desc_ctx
+  - title: backend engineer
+    title_context: *title_ctx
+    desc_context: *desc_ctx

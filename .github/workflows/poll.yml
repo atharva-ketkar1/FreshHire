@@ -1,0 +1,52 @@
+name: FreshHire poll
+
+on:
+  schedule:
+    - cron: "17 */3 * * *" # every 3 hours, off the hour to dodge cron congestion
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: freshhire-poll
+  cancel-in-progress: false
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2 # enough to amend the previous rolling DB commit
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: Poll boards and send digest
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: python cli.py run
+
+      # The DB changes on every poll (last_seen_at), so normal commits would
+      # bloat the repo by hundreds of MB/month. Instead, keep the DB in one
+      # rolling commit: amend it if the tip is already a poll commit,
+      # otherwise create it. History for code commits is untouched.
+      - name: Persist database (single rolling commit)
+        run: |
+          git config user.name "freshhire-bot"
+          git config user.email "freshhire-bot@users.noreply.github.com"
+          git add data/freshhire.db
+          if ! git diff --cached --quiet; then
+            if git log -1 --pretty=%s | grep -q '^chore: poll'; then
+              git commit --amend -m "chore: poll $(date -u +'%Y-%m-%dT%H:%MZ')"
+              git push --force-with-lease
+            else
+              git commit -m "chore: poll $(date -u +'%Y-%m-%dT%H:%MZ')"
+              git push
+            fi
+          fi

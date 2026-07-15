@@ -1,0 +1,59 @@
+# Target companies. Every slug below was verified live against the ATS
+# public API on 2026-07-14. To add a company, find its board:
+#   Greenhouse: https://boards-api.greenhouse.io/v1/boards/<slug>/jobs
+#   Lever:      https://api.lever.co/v0/postings/<slug>?mode=json
+# Removing a company here deactivates it (existing rows are kept).
+#
+# Not yet supported (need Ashby adapter): OpenAI, Cursor, ElevenLabs, Sierra,
+# Modal, Ramp, Replit, Notion, Harvey, LangChain, Perplexity, Cohere, Groq.
+# Not yet supported (need Workday scraping): NVIDIA, Netflix, Salesforce.
+
+companies:
+  # --- Frontier / foundation model labs ---
+  - {name: Anthropic,          ats: greenhouse, slug: anthropic}
+  - {name: xAI,                ats: greenhouse, slug: xai}
+  - {name: Google DeepMind,    ats: greenhouse, slug: deepmind}
+  - {name: Mistral AI,         ats: lever,      slug: mistral}
+  - {name: Inflection AI,      ats: greenhouse, slug: inflectionai}
+  - {name: Imbue,              ats: greenhouse, slug: imbue}
+  - {name: World Labs,         ats: greenhouse, slug: worldlabs}
+  - {name: Stability AI,       ats: greenhouse, slug: stabilityai}
+  - {name: Contextual AI,      ats: greenhouse, slug: contextualai}
+  - {name: EvolutionaryScale,  ats: greenhouse, slug: evolutionaryscale}
+
+  # --- AI infrastructure / tooling ---
+  - {name: Databricks,         ats: greenhouse, slug: databricks}
+  - {name: Scale AI,           ats: greenhouse, slug: scaleai}
+  - {name: Together AI,        ats: greenhouse, slug: togetherai}
+  - {name: Fireworks AI,       ats: greenhouse, slug: fireworksai}
+  - {name: CoreWeave,          ats: greenhouse, slug: coreweave}
+  - {name: SambaNova,          ats: greenhouse, slug: sambanovasystems}
+  - {name: Anyscale,           ats: lever,      slug: anyscale}
+  - {name: Snorkel AI,         ats: greenhouse, slug: snorkelai}
+  - {name: Arize AI,           ats: greenhouse, slug: arizeai}
+  - {name: Galileo,            ats: greenhouse, slug: galileo}
+  - {name: AssemblyAI,         ats: greenhouse, slug: assemblyai}
+
+  # --- Applied AI products ---
+  - {name: Glean,              ats: greenhouse, slug: gleanwork}
+  - {name: Cresta,             ats: greenhouse, slug: cresta}
+  - {name: Instabase,          ats: greenhouse, slug: instabase}
+  - {name: Typeface,           ats: greenhouse, slug: typeface}
+  - {name: Descript,           ats: greenhouse, slug: descript}
+  - {name: Dataiku,            ats: greenhouse, slug: dataiku}
+  - {name: C3 AI,              ats: greenhouse, slug: c3iot}
+  - {name: Duolingo,           ats: greenhouse, slug: duolingo}
+  - {name: Figma,              ats: greenhouse, slug: figma}
+  - {name: Vercel,             ats: greenhouse, slug: vercel}
+
+  # --- FDE-heavy / deployed AI ---
+  - {name: Palantir,           ats: lever,      slug: palantir}
+  - {name: Shield AI,          ats: lever,      slug: shieldai}
+
+  # --- Autonomy / robotics / AI for science ---
+  - {name: Waymo,              ats: greenhouse, slug: waymo}
+  - {name: Zoox,               ats: lever,      slug: zoox}
+  - {name: Nuro,               ats: greenhouse, slug: nuro}
+  - {name: Figure,             ats: greenhouse, slug: figureai}
+  - {name: Isomorphic Labs,    ats: greenhouse, slug: isomorphiclabs}
+  - {name: PathAI,             ats: greenhouse, slug: pathai}

@@ -1,0 +1,6 @@
+# NOTE: data/freshhire.db is intentionally NOT ignored — GitHub Actions
+# commits it back to the repo so state persists between cron runs.
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
