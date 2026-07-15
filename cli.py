@@ -91,8 +91,8 @@ def cmd_sheet(conn, args) -> int:
         print("[sheet] tracker already up to date")
         return 0
     rows = [
-        [r["first_seen_at"][:10], r["company_name"], r["title"],
-         r["location"] or "", r["url"], "", ""]
+        sheets.job_row(r["first_seen_at"][:10], r["company_name"], r["title"],
+                       r["location"] or "", r["url"])
         for r in rows_db
     ]
     sheets.append_jobs(json.loads(sa_json), sheet_id, rows)

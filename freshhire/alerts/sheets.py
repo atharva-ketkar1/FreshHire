@@ -10,7 +10,14 @@ import gspread
 from google.oauth2.service_account import Credentials
 
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
-HEADER = ["First seen", "Company", "Title", "Location", "Link", "Status", "Notes"]
+HEADER = ["First seen", "Company", "Title", "Location", "Link", "Applied", "Result", "Notes"]
+
+
+def job_row(first_seen: str, company: str, title: str, location: str, url: str) -> list[str]:
+    """One sheet row. Link is a clean 'Apply' hyperlink; Applied renders as an
+    unchecked checkbox (the column has checkbox validation)."""
+    link = '=HYPERLINK("{}","Apply")'.format(url.replace('"', ""))
+    return [first_seen, company, title, location, link, "FALSE", "", ""]
 
 
 def append_jobs(service_account_info: dict, sheet_id: str, rows: list[list[str]]) -> None:
