@@ -91,13 +91,13 @@ def cmd_sheet(conn, args) -> int:
         print("[sheet] tracker already up to date")
         return 0
     rows = [
-        sheets.job_row(r["first_seen_at"][:10], r["company_name"], r["title"],
+        sheets.job_row(sheets.fmt_local(r["first_seen_at"]), r["company_name"], r["title"],
                        r["location"] or "", r["url"])
         for r in rows_db
     ]
-    sheets.append_jobs(json.loads(sa_json), sheet_id, rows)
+    added = sheets.append_jobs(json.loads(sa_json), sheet_id, rows)
     db.mark_sheeted(conn, [r["id"] for r in rows_db], db.utcnow())
-    print(f"[sheet] appended {len(rows)} job(s) to the tracker")
+    print(f"[sheet] appended {added} job(s) to the tracker ({len(rows) - added} already present)")
     return 0
 
 
