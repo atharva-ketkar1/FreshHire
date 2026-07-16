@@ -14,7 +14,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
-HEADER = ["First seen (CT)", "Company", "Title", "Location", "Link", "Applied", "Result", "Notes"]
+HEADER = ["First seen (CT)", "Company", "Title", "Location", "Link", "Fit", "Applied", "Result", "Notes"]
 LOCAL_TZ = ZoneInfo("America/Chicago")
 
 _HYPERLINK_URL_RE = re.compile(r'HYPERLINK\("([^"]+)"')
@@ -31,15 +31,15 @@ RESULT_OPTIONS = [
 
 
 def job_row(first_seen: str, company: str, title: str, location: str, url: str,
-            notes: str = "") -> list[str]:
+            fit: int = 0, notes: str = "") -> list[str]:
     """One sheet row. Link is a clean 'Apply' hyperlink; Applied renders as an
     unchecked checkbox (the column has checkbox validation)."""
     link = '=HYPERLINK("{}","Apply")'.format(url.replace('"', ""))
-    return [first_seen, company, title, location, link, "FALSE", "", notes]
+    return [first_seen, company, title, location, link, str(fit), "FALSE", "", notes]
 
 
 def apply_row_validation(spreadsheet, worksheet_id: int, start_row: int, end_row: int) -> None:
-    """Checkbox on Applied (F) and dropdown on Result (G) for rows
+    """Checkbox on Applied (G) and dropdown on Result (H) for rows
     [start_row, end_row], 1-based inclusive. Applied per data row rather than
     to the whole column so empty rows stay visually empty."""
     def _range(col):
@@ -47,9 +47,9 @@ def apply_row_validation(spreadsheet, worksheet_id: int, start_row: int, end_row
                 "startColumnIndex": col, "endColumnIndex": col + 1}
 
     spreadsheet.batch_update({"requests": [
-        {"setDataValidation": {"range": _range(5), "rule": {
-            "condition": {"type": "BOOLEAN"}, "strict": True, "showCustomUi": True}}},
         {"setDataValidation": {"range": _range(6), "rule": {
+            "condition": {"type": "BOOLEAN"}, "strict": True, "showCustomUi": True}}},
+        {"setDataValidation": {"range": _range(7), "rule": {
             "condition": {"type": "ONE_OF_LIST",
                           "values": [{"userEnteredValue": v} for v in RESULT_OPTIONS]},
             "strict": False, "showCustomUi": True}}},

@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS jobs (
     url                 TEXT NOT NULL,
     description_snippet TEXT,
     relevant            INTEGER NOT NULL DEFAULT 0,
+    fit                 INTEGER NOT NULL DEFAULT 0,
     is_baseline         INTEGER NOT NULL DEFAULT 0,
     first_seen_at       TEXT NOT NULL,
     last_seen_at        TEXT NOT NULL,
@@ -56,7 +57,9 @@ def connect(path: str | Path) -> sqlite3.Connection:
     cols = {r[1] for r in conn.execute("PRAGMA table_info(jobs)")}
     if "sheeted_at" not in cols:
         conn.execute("ALTER TABLE jobs ADD COLUMN sheeted_at TEXT")
-        conn.commit()
+    if "fit" not in cols:
+        conn.execute("ALTER TABLE jobs ADD COLUMN fit INTEGER NOT NULL DEFAULT 0")
+    conn.commit()
     return conn
 
 
@@ -86,25 +89,26 @@ def record_sighting(
     relevant: bool,
     is_baseline: bool,
     now: str,
+    fit: int = 0,
 ) -> str:
     """Insert or refresh one posting. Returns 'new', 'seen', or 'reopened'."""
     row = conn.execute("SELECT id, closed_at FROM jobs WHERE fingerprint=?", (fp,)).fetchone()
     if row is None:
         conn.execute(
             """INSERT INTO jobs (company_id, fingerprint, ats_job_id, title, location, url,
-                                 description_snippet, relevant, is_baseline, first_seen_at, last_seen_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                                 description_snippet, relevant, fit, is_baseline, first_seen_at, last_seen_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (company_id, fp, job.ats_job_id, job.title, job.location, job.url,
-             job.description[:1000], int(relevant), int(is_baseline), now, now),
+             job.description[:1000], int(relevant), fit, int(is_baseline), now, now),
         )
         return "new"
     reopened = row["closed_at"] is not None
     # A repost keeps its original first_seen_at — that's the whole point.
-    # relevant is refreshed with the full live description so filter changes
-    # propagate to open jobs on the next poll (rescore only sees snippets).
+    # relevant/fit are refreshed with the full live description so filter
+    # changes propagate to open jobs on the next poll (rescore only sees snippets).
     conn.execute(
-        "UPDATE jobs SET last_seen_at=?, closed_at=NULL, ats_job_id=?, url=?, relevant=? WHERE id=?",
-        (now, job.ats_job_id, job.url, int(relevant), row["id"]),
+        "UPDATE jobs SET last_seen_at=?, closed_at=NULL, ats_job_id=?, url=?, relevant=?, fit=? WHERE id=?",
+        (now, job.ats_job_id, job.url, int(relevant), fit, row["id"]),
     )
     return "reopened" if reopened else "seen"
 
@@ -133,7 +137,7 @@ def fresh_unalerted(conn: sqlite3.Connection, hours: int) -> list[sqlite3.Row]:
            FROM jobs JOIN companies ON companies.id = jobs.company_id
            WHERE jobs.relevant=1 AND jobs.is_baseline=0 AND jobs.alerted_at IS NULL
                  AND jobs.closed_at IS NULL AND jobs.first_seen_at >= ?
-           ORDER BY jobs.first_seen_at DESC""",
+           ORDER BY jobs.fit DESC, jobs.first_seen_at DESC""",
         (cutoff,),
     ).fetchall()
 
@@ -153,7 +157,7 @@ def sheet_pending(conn: sqlite3.Connection) -> list[sqlite3.Row]:
            FROM jobs JOIN companies ON companies.id = jobs.company_id
            WHERE jobs.relevant=1 AND jobs.sheeted_at IS NULL AND jobs.closed_at IS NULL
                  AND (jobs.alerted_at IS NOT NULL OR jobs.is_baseline=1)
-           ORDER BY jobs.first_seen_at""",
+           ORDER BY jobs.fit DESC, jobs.first_seen_at""",
     ).fetchall()
 
 

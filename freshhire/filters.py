@@ -61,6 +61,20 @@ def is_us_location(location: str) -> bool:
     return bool(_US_STATE_ABBREV_RE.search(loc)) or any(p.search(loc) for p in _US_PATTERNS)
 
 
+# --- fit scoring (0-100): how well a passing job matches an early-career
+# AI-engineer profile. Title boosts take the max matching tier, not a sum. ---
+_TITLE_BOOSTS = [
+    (30, ["new grad", "new graduate", "university grad", "early career",
+          "entry level", "junior", "engineer i", "graduate"]),
+    (25, ["ai engineer", "forward deployed", "fde", "applied ai"]),
+    (20, ["machine learning engineer", "ml engineer", "mle", "machine learning researcher"]),
+    (15, ["research engineer", "applied scientist", "llm", "genai"]),
+    (10, ["member of technical staff", "machine learning", "computer vision", "nlp"]),
+]
+_DESC_EARLY_TERMS = ["new grad", "recent graduate", "entry level", "0-1 years",
+                     "0-2 years", "1-2 years", "early career", "all levels"]
+
+
 def min_years_required(description: str) -> int | None:
     """Smallest years-of-experience figure stated near 'experience', or None.
     Using the minimum keeps '2+ years (5+ for senior)' postings alive."""
@@ -81,6 +95,10 @@ def _term_re(term: str) -> re.Pattern:
     if term.startswith("re:"):
         return re.compile(term[3:].lower())
     return re.compile(r"(?<![a-z0-9])" + re.escape(term.lower()) + r"(?![a-z0-9])")
+
+
+_TITLE_BOOSTS = [(pts, [_term_re(t) for t in terms]) for pts, terms in _TITLE_BOOSTS]
+_DESC_EARLY_RES = [_term_re(t) for t in _DESC_EARLY_TERMS]
 
 
 class RoleFilter:
@@ -113,6 +131,28 @@ class RoleFilter:
             if required is not None and required > int(self.max_years):
                 return False
         return True
+
+    def evaluate(self, title: str, description: str, location: str = "") -> tuple[bool, int]:
+        """(relevant, fit 0-100). Fit ranks passing jobs by profile match:
+        base 40, + best title tier, + stated-experience friendliness,
+        + early-career phrases in the description."""
+        if not self.is_relevant(title, description, location):
+            return False, 0
+        title_l = (title or "").lower()
+        desc_l = (description or "").lower()
+        fit = 40
+        fit += next((pts for pts, pats in _TITLE_BOOSTS
+                     if any(p.search(title_l) for p in pats)), 0)
+        required = min_years_required(description)
+        if required is not None and required <= 1:
+            fit += 20
+        elif required is None:
+            fit += 5
+        else:  # 2 years stated — allowed, slightly less ideal
+            fit += 10
+        if any(p.search(desc_l) for p in _DESC_EARLY_RES):
+            fit += 10
+        return True, min(fit, 100)
 
     def _title_match(self, title_l: str, description: str) -> bool:
         if any(p.search(title_l) for p in self.include):

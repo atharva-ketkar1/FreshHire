@@ -54,8 +54,8 @@ def poll_all(conn, companies, role_filter: RoleFilter) -> PollStats:
             if fp in seen_fps:
                 continue  # duplicate posting within the same board snapshot
             seen_fps.add(fp)
-            relevant = role_filter.is_relevant(job.title, job.description, job.location)
-            outcome = record_sighting(conn, company["id"], fp, job, relevant, is_first_poll, now)
+            relevant, fit = role_filter.evaluate(job.title, job.description, job.location)
+            outcome = record_sighting(conn, company["id"], fp, job, relevant, is_first_poll, now, fit)
             if outcome == "new":
                 stats.new += 1
                 if relevant and not is_first_poll:

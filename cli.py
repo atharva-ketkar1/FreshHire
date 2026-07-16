@@ -92,7 +92,7 @@ def cmd_sheet(conn, args) -> int:
         return 0
     rows = [
         sheets.job_row(sheets.fmt_local(r["first_seen_at"]), r["company_name"], r["title"],
-                       r["location"] or "", r["url"],
+                       r["location"] or "", r["url"], fit=r["fit"],
                        notes="baseline — live now, posting age unknown" if r["is_baseline"] else "")
         for r in rows_db
     ]
@@ -127,12 +127,12 @@ def cmd_rescore(conn, args) -> int:
     differ slightly until the next poll refreshes them.
     """
     role_filter = load_filter(FILTERS_PATH)
-    rows = conn.execute("SELECT id, title, location, description_snippet, relevant FROM jobs").fetchall()
+    rows = conn.execute("SELECT id, title, location, description_snippet, relevant, fit FROM jobs").fetchall()
     flipped = 0
     for r in rows:
-        relevant = role_filter.is_relevant(r["title"], r["description_snippet"] or "", r["location"] or "")
-        if int(relevant) != r["relevant"]:
-            conn.execute("UPDATE jobs SET relevant=? WHERE id=?", (int(relevant), r["id"]))
+        relevant, fit = role_filter.evaluate(r["title"], r["description_snippet"] or "", r["location"] or "")
+        if int(relevant) != r["relevant"] or fit != r["fit"]:
+            conn.execute("UPDATE jobs SET relevant=?, fit=? WHERE id=?", (int(relevant), fit, r["id"]))
             flipped += 1
     conn.commit()
     total_relevant = conn.execute("SELECT COUNT(*) FROM jobs WHERE relevant=1").fetchone()[0]
