@@ -133,6 +133,14 @@ conditional_title:
       - llm
       - genai
       - agentic
+      # non-LLM AI (vision/robotics/applied-ML) so companies like Waymo,
+      # Figure, PathAI, and enterprise ML teams aren't invisible
+      - machine learning
+      - computer vision
+      - perception
+      - autonomy
+      - recommendation system
+      - ml model
   - title: software engineer
     title_context: *title_ctx
     desc_context: *desc_ctx

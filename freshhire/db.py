@@ -143,13 +143,16 @@ def mark_alerted(conn: sqlite3.Connection, job_ids: list[int], now: str) -> None
     conn.commit()
 
 
-def alerted_unsheeted(conn: sqlite3.Connection) -> list[sqlite3.Row]:
-    """Alerted jobs not yet appended to the tracker sheet (still relevant only,
-    so jobs re-scored out by a filter change don't get backfilled)."""
+def sheet_pending(conn: sqlite3.Connection) -> list[sqlite3.Row]:
+    """Jobs that belong in the tracker but aren't there yet: alerted fresh
+    jobs, plus baseline imports (open roles found on a company's first poll —
+    they skip Slack but appear in the sheet with a baseline note). Relevant
+    only, so jobs re-scored out by a filter change don't get backfilled."""
     return conn.execute(
         """SELECT jobs.*, companies.name AS company_name
            FROM jobs JOIN companies ON companies.id = jobs.company_id
-           WHERE jobs.relevant=1 AND jobs.alerted_at IS NOT NULL AND jobs.sheeted_at IS NULL
+           WHERE jobs.relevant=1 AND jobs.sheeted_at IS NULL AND jobs.closed_at IS NULL
+                 AND (jobs.alerted_at IS NOT NULL OR jobs.is_baseline=1)
            ORDER BY jobs.first_seen_at""",
     ).fetchall()
 

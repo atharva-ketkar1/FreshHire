@@ -30,11 +30,12 @@ RESULT_OPTIONS = [
 ]
 
 
-def job_row(first_seen: str, company: str, title: str, location: str, url: str) -> list[str]:
+def job_row(first_seen: str, company: str, title: str, location: str, url: str,
+            notes: str = "") -> list[str]:
     """One sheet row. Link is a clean 'Apply' hyperlink; Applied renders as an
     unchecked checkbox (the column has checkbox validation)."""
     link = '=HYPERLINK("{}","Apply")'.format(url.replace('"', ""))
-    return [first_seen, company, title, location, link, "FALSE", "", ""]
+    return [first_seen, company, title, location, link, "FALSE", "", notes]
 
 
 def apply_row_validation(spreadsheet, worksheet_id: int, start_row: int, end_row: int) -> None:

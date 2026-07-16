@@ -1,11 +1,9 @@
 name: FreshHire poll
 
+# Triggered every 3h by cron-job.org via workflow_dispatch (GitHub's own
+# cron proved unreliable for this repo, and with ~90 companies each run is
+# now minutes long — a single trigger source keeps us inside free minutes).
 on:
-  schedule:
-    # Every 3 hours, off the hour to dodge cron congestion. GitHub fires
-    # these best-effort and may skip the first ticks after a workflow is
-    # created; pushing any change to this file re-registers the schedule.
-    - cron: "23 */3 * * *"
   workflow_dispatch:
 
 permissions:

@@ -57,3 +57,60 @@ companies:
   - {name: Figure,             ats: greenhouse, slug: figureai}
   - {name: Isomorphic Labs,    ats: greenhouse, slug: isomorphiclabs}
   - {name: PathAI,             ats: greenhouse, slug: pathai}
+  - {name: Aurora,             ats: greenhouse, slug: aurorainnovation}
+  - {name: Motional,           ats: greenhouse, slug: motional}
+
+  # --- Broad tech (AI/ML teams inside big product companies) ---
+  # Verified live 2026-07-16. Role filters do the narrowing: only AI/ML-
+  # relevant, early-career, US postings from these boards ever surface.
+  - {name: Stripe,             ats: greenhouse, slug: stripe}
+  - {name: Airbnb,             ats: greenhouse, slug: airbnb}
+  - {name: Coinbase,           ats: greenhouse, slug: coinbase}
+  - {name: Robinhood,          ats: greenhouse, slug: robinhood}
+  - {name: Reddit,             ats: greenhouse, slug: reddit}
+  - {name: Pinterest,          ats: greenhouse, slug: pinterest}
+  - {name: Instacart,          ats: greenhouse, slug: instacart}
+  - {name: DoorDash,           ats: greenhouse, slug: doordashusa}
+  - {name: Lyft,               ats: greenhouse, slug: lyft}
+  - {name: Block (Square),     ats: greenhouse, slug: block}
+  - {name: Affirm,             ats: greenhouse, slug: affirm}
+  - {name: Brex,               ats: greenhouse, slug: brex}
+  - {name: Chime,              ats: greenhouse, slug: chime}
+  - {name: Discord,            ats: greenhouse, slug: discord}
+  - {name: Roblox,             ats: greenhouse, slug: roblox}
+  - {name: Datadog,            ats: greenhouse, slug: datadog}
+  - {name: Cloudflare,         ats: greenhouse, slug: cloudflare}
+  - {name: MongoDB,            ats: greenhouse, slug: mongodb}
+  - {name: Elastic,            ats: greenhouse, slug: elastic}
+  - {name: Twilio,             ats: greenhouse, slug: twilio}
+  - {name: Okta,               ats: greenhouse, slug: okta}
+  - {name: Dropbox,            ats: greenhouse, slug: dropbox}
+  - {name: GitLab,             ats: greenhouse, slug: gitlab}
+  - {name: Squarespace,        ats: greenhouse, slug: squarespace}
+  - {name: Gusto,              ats: greenhouse, slug: gusto}
+  - {name: Airtable,           ats: greenhouse, slug: airtable}
+  - {name: Samsara,            ats: greenhouse, slug: samsara}
+  - {name: Verkada,            ats: greenhouse, slug: verkada}
+
+  # --- Quant / trading (heavy ML hiring) ---
+  - {name: Hudson River Trading, ats: greenhouse, slug: wehrtyou}
+  - {name: Jump Trading,       ats: greenhouse, slug: jumptrading}
+  - {name: IMC Trading,        ats: greenhouse, slug: imc}
+  - {name: Optiver,            ats: greenhouse, slug: optiverus}
+  - {name: DRW,                ats: greenhouse, slug: drweng}
+  - {name: Akuna Capital,      ats: greenhouse, slug: akunacapital}
+  - {name: Point72,            ats: greenhouse, slug: point72}
+
+  # --- Enterprise (Workday boards; searched for AI/ML roles only) ---
+  # JPMorgan and Walmart use custom platforms — not scrapeable yet.
+  - {name: Capital One,        ats: workday, slug: capitalone.wd12/Capital_One}
+  - {name: NVIDIA,             ats: workday, slug: nvidia.wd5/NVIDIAExternalCareerSite}
+  - {name: Adobe,              ats: workday, slug: adobe.wd5/external_experienced}
+  - {name: Salesforce,         ats: workday, slug: salesforce.wd12/External_Career_Site}
+  - {name: PayPal,             ats: workday, slug: paypal.wd1/jobs}
+  - {name: eBay,               ats: workday, slug: ebay.wd5/apply}
+  - {name: Disney,             ats: workday, slug: disney.wd5/disneycareer}
+  - {name: Target,             ats: workday, slug: target.wd5/targetcareers}
+  - {name: Home Depot,         ats: workday, slug: homedepot.wd5/CareerDepot}
+  - {name: Comcast,            ats: workday, slug: comcast.wd5/Comcast_Careers}
+  - {name: Workday Inc,        ats: workday, slug: workday.wd5/Workday}

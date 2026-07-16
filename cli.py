@@ -86,13 +86,14 @@ def cmd_sheet(conn, args) -> int:
     if not sheet_id or not sa_json:
         print("[sheet] GOOGLE_SHEET_ID / GOOGLE_SERVICE_ACCOUNT_JSON not set — skipping tracker sync")
         return 0
-    rows_db = db.alerted_unsheeted(conn)
+    rows_db = db.sheet_pending(conn)
     if not rows_db:
         print("[sheet] tracker already up to date")
         return 0
     rows = [
         sheets.job_row(sheets.fmt_local(r["first_seen_at"]), r["company_name"], r["title"],
-                       r["location"] or "", r["url"])
+                       r["location"] or "", r["url"],
+                       notes="baseline — live now, posting age unknown" if r["is_baseline"] else "")
         for r in rows_db
     ]
     added = sheets.append_jobs(json.loads(sa_json), sheet_id, rows)
