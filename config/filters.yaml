@@ -8,9 +8,13 @@ recency_hours: 24
 us_only: true
 
 # Reject postings whose stated minimum experience requirement exceeds this
-# many years (the smallest "N+ years ... experience" figure found in the
-# description). Postings that state no requirement pass.
+# many years (the smallest requirement-shaped "N+ years" figure found in
+# the description). Postings that state no requirement pass.
 max_years_experience: 2
+
+# Reject postings that require a PhD/doctorate (mentions softened by
+# "preferred", "a plus", "or MS/BS" etc. are forgiven).
+exclude_phd_required: true
 
 # Stage 1: if the TITLE matches any of these, the job is out. Full stop.
 # Entries starting with "re:" are raw regexes; everything else matches on

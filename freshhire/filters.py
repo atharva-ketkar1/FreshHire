@@ -47,8 +47,42 @@ _US_STATE_ABBREV_RE = re.compile(
 )
 
 # --- minimum years-of-experience requirements in descriptions ---
-_YEARS_BEFORE_RE = re.compile(r"(\d{1,2})\s*\+?\s*(?:-\s*\d{1,2}\s*)?years?[^.\n]{0,50}?experience")
-_YEARS_AFTER_RE = re.compile(r"experience[^.\n]{0,50}?(\d{1,2})\s*\+?\s*years?")
+# Stated YOE is a HARD exclusion: any requirement-shaped years phrase counts,
+# whether or not the word "experience" sits nearby ("3+ years building ML
+# systems" is a requirement too). Multiple figures take the minimum, since
+# postings often state junior and senior tiers ("3+ years, 6-10 for Senior").
+_WORD_NUM = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5,
+             "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10}
+_NUM = r"(\d{1,2}|" + "|".join(_WORD_NUM) + r")"
+_YRS = r"(?:years?|yrs?)"
+_YEARS_PATTERNS = [
+    re.compile(_NUM + r"\s*\+\s*" + _YRS),                                   # "3+ years"
+    re.compile(_NUM + r"\s*(?:-|–|—|to)\s*\d{1,2}\s*" + _YRS),               # "6-10 years" -> lower bound
+    re.compile(r"(?:minimum|min\.?|at least)\s+(?:of\s+)?" + _NUM + r"\s*" + _YRS),
+    re.compile(_NUM + r"\s*" + _YRS + r"[^.\n]{0,120}?experience"),          # "3 years ... experience"
+    re.compile(r"experience[^.\n]{0,120}?" + _NUM + r"\s*\+?\s*" + _YRS),    # "experience of 3 years"
+]
+
+
+def _years_int(token: str) -> int:
+    return _WORD_NUM.get(token, 0) or int(token)
+
+
+# --- hard degree requirements. "PhD in X, or equivalent industry research
+# experience" still excludes: an early-career bachelor's holder satisfies
+# neither branch. Only softened mentions ("PhD preferred", "PhD a plus")
+# are forgiven. ---
+_PHD_RE = re.compile(r"ph\.?\s?d|doctorate|doctoral degree")
+_PHD_SOFTENER_RE = re.compile(r"preferred|a plus|plus but|nice to have|bonus|ideally|not required|or (?:a\s+)?(?:bs|ba|b\.s|bachelor|ms|m\.s|master)")
+
+
+def requires_phd(description: str) -> bool:
+    desc = (description or "").lower()
+    for m in _PHD_RE.finditer(desc):
+        window = desc[max(0, m.start() - 40):m.end() + 90]
+        if not _PHD_SOFTENER_RE.search(window):
+            return True
+    return False
 
 
 def is_us_location(location: str) -> bool:
@@ -76,14 +110,15 @@ _DESC_EARLY_TERMS = ["new grad", "recent graduate", "entry level", "0-1 years",
 
 
 def min_years_required(description: str) -> int | None:
-    """Smallest years-of-experience figure stated near 'experience', or None.
-    Using the minimum keeps '2+ years (5+ for senior)' postings alive."""
+    """Smallest requirement-shaped years figure in the description, or None.
+    Using the minimum keeps '2+ years (5+ for senior)' postings alive while
+    '3+ years (6-10 for Senior)' correctly reads as a 3-year bar."""
     desc = (description or "").lower()
     years = [
-        int(m.group(1))
-        for pattern in (_YEARS_BEFORE_RE, _YEARS_AFTER_RE)
+        _years_int(m.group(1))
+        for pattern in _YEARS_PATTERNS
         for m in pattern.finditer(desc)
-        if int(m.group(1)) <= 20  # ignore "founded 25 years ago" noise
+        if _years_int(m.group(1)) <= 20  # ignore "founded 25 years ago" noise
     ]
     return min(years) if years else None
 
@@ -106,6 +141,7 @@ class RoleFilter:
         self.recency_hours = int(cfg.get("recency_hours", 24))
         self.us_only = bool(cfg.get("us_only", False))
         self.max_years = cfg.get("max_years_experience")
+        self.exclude_phd = bool(cfg.get("exclude_phd_required", False))
         self.exclude = [_term_re(t) for t in cfg.get("exclude_title", [])]
         self.include = [_term_re(t) for t in cfg.get("include_title", [])]
         self.conditional = [
@@ -130,6 +166,8 @@ class RoleFilter:
             required = min_years_required(description)
             if required is not None and required > int(self.max_years):
                 return False
+        if self.exclude_phd and requires_phd(description):
+            return False
         return True
 
     def evaluate(self, title: str, description: str, location: str = "") -> tuple[bool, int]:
