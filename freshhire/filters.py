@@ -109,18 +109,42 @@ _DESC_EARLY_TERMS = ["new grad", "recent graduate", "entry level", "0-1 years",
                      "0-2 years", "1-2 years", "early career", "all levels"]
 
 
+# figures explicitly tied to a higher tier don't bind the base role
+_SENIOR_TIER_RE = re.compile(r"senior|staff|principal|lead|more experienced|higher level")
+
+
 def min_years_required(description: str) -> int | None:
-    """Smallest requirement-shaped years figure in the description, or None.
-    Using the minimum keeps '2+ years (5+ for senior)' postings alive while
-    '3+ years (6-10 for Senior)' correctly reads as a 3-year bar."""
+    """The binding years-of-experience requirement, or None if unstated.
+
+    Postings often stack conjunctive requirements ("5+ years of engineering,
+    including 1+ year of GenAI") — the binding figure is the MAXIMUM of the
+    stated ones. A figure immediately followed by a senior-tier marker
+    ("6-10 years for Senior levels") describes a higher tier, not the base
+    role, and is ignored. Overlapping matches ("0-2 years" also matching as
+    "2 years ... experience") keep only the earliest-starting one, so range
+    floors win.
+    """
     desc = (description or "").lower()
-    years = [
-        _years_int(m.group(1))
-        for pattern in _YEARS_PATTERNS
-        for m in pattern.finditer(desc)
-        if _years_int(m.group(1)) <= 20  # ignore "founded 25 years ago" noise
-    ]
-    return min(years) if years else None
+    found = []
+    for pattern in _YEARS_PATTERNS:
+        for m in pattern.finditer(desc):
+            value = _years_int(m.group(1))
+            if value <= 20:  # ignore "founded 25 years ago" noise
+                found.append([m.start(), m.end(), value])
+    found.sort(key=lambda t: (t[0], -t[1]))
+    kept = []
+    for s, e, v in found:
+        if kept and s < kept[-1][1]:
+            continue  # overlaps the previous match — range floor already kept
+        kept.append([s, e, v])
+    # attach each senior-tier marker to the nearest figure just before it
+    for marker in _SENIOR_TIER_RE.finditer(desc):
+        for entry in reversed(kept):
+            if entry[1] <= marker.start() and marker.start() - entry[1] <= 45:
+                entry[2] = None
+                break
+    years = [v for _, _, v in kept if v is not None]
+    return max(years) if years else None
 
 
 def _term_re(term: str) -> re.Pattern:

@@ -15,6 +15,7 @@ are capped per poll; anything past the cap is picked up on later polls.
 
 import html
 import re
+import time
 
 import requests
 
@@ -24,6 +25,11 @@ SEARCHES = ["machine learning", "artificial intelligence", "ai engineer"]
 PAGES_PER_SEARCH = 5          # 20 results/page (API max) -> up to 100 hits/term
 DETAIL_FETCH_CAP = 60         # per company per poll
 DESCRIPTION_LIMIT = 20000
+REQUEST_TIMEOUT = 15
+# One slow/hanging tenant must not stall the whole poll. On budget overrun we
+# raise (company skipped, retried next poll) rather than return a partial
+# board, which would wrongly close every job we didn't get to.
+FETCH_BUDGET_SECONDS = 150
 
 # cheap prefilter so we don't fetch details for the sales/ops roles that
 # fuzzy search drags in; the real RoleFilter decides afterwards
@@ -50,14 +56,20 @@ def fetch_jobs(slug: str) -> list[RawJob]:
     base = f"https://{tenant}.{wd}.myworkdayjobs.com/wday/cxs/{tenant}/{site}"
     session = requests.Session()
     session.headers["Accept"] = "application/json"
+    deadline = time.monotonic() + FETCH_BUDGET_SECONDS
+
+    def check_budget():
+        if time.monotonic() > deadline:
+            raise RuntimeError(f"workday fetch budget ({FETCH_BUDGET_SECONDS}s) exceeded")
 
     postings: dict[str, dict] = {}
     for term in SEARCHES:
         for page in range(PAGES_PER_SEARCH):
+            check_budget()
             resp = session.post(
                 f"{base}/jobs",
                 json={"appliedFacets": {}, "limit": 20, "offset": page * 20, "searchText": term},
-                timeout=30,
+                timeout=REQUEST_TIMEOUT,
             )
             resp.raise_for_status()
             batch = resp.json().get("jobPostings", [])
@@ -76,9 +88,10 @@ def fetch_jobs(slug: str) -> list[RawJob]:
             continue
         if fetched >= DETAIL_FETCH_CAP:
             break
+        check_budget()
         fetched += 1
         try:
-            detail = session.get(f"{base}{path}", timeout=30).json().get("jobPostingInfo", {})
+            detail = session.get(f"{base}{path}", timeout=REQUEST_TIMEOUT).json().get("jobPostingInfo", {})
         except Exception:
             continue
         locations = [detail.get("location") or ""] + (detail.get("additionalLocations") or [])
