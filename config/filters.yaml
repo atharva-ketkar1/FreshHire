@@ -10,7 +10,9 @@ us_only: true
 # Reject postings whose stated minimum experience requirement exceeds this
 # many years (the smallest requirement-shaped "N+ years" figure found in
 # the description). Postings that state no requirement pass.
-max_years_experience: 2
+# User has ~1 YOE: "2-5 years" and "2+ years" postings are already out of
+# reach, so the ceiling is 1.
+max_years_experience: 1
 
 # Reject postings that require a PhD/doctorate (mentions softened by
 # "preferred", "a plus", "or MS/BS" etc. are forgiven).
